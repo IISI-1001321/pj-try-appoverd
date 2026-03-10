@@ -144,4 +144,5 @@ jobs:
 
       - name: Notify success
         if: success()
-        run: echo "::notice::Production 部署完成！Digest: ${{ needs.docker-build-push.outputs.image-digest }}"
+        run: |
+          echo "::notice::Production 部署完成！Digest: ${{ needs.docker-build-push.outputs.image-digest }}"

@@ -137,12 +137,39 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     steps:
-      - name: Deploy to Production
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push to ECR
         run: |
-          echo "::notice::部署映像 ${{ needs.docker-build-push.outputs.image-tag }} 至 Production..."
-          # 替換為實際部署指令
+          docker build -t wh/test .
+          docker tag wh/test:latest 976952618766.dkr.ecr.us-east-1.amazonaws.com/wh/test:latest
+          docker push 976952618766.dkr.ecr.us-east-1.amazonaws.com/wh/test:latest
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster 20260312 \
+            --service 20260312-service-w2p0s3tq \
+            --task-definition 20260312:2
+          aws ecs update-service \
+            --cluster 20260312 \
+            --service 20260312-service-w2p0s3tq \
+            --force-new-deployment
 
       - name: Notify success
         if: success()
         run: |
           echo "::notice::Production 部署完成！Digest: ${{ needs.docker-build-push.outputs.image-digest }}"
+          
